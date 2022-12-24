@@ -3,7 +3,10 @@ import time
 import requests as r
 from web3 import Web3
 
-address = '0x16aEa9952f9d308b1A1DeF3684b0F18111A0aAbF'
+abi_path = 'Abi of NFT minting contract'
+private = "YOU PRIVATE KEY"
+
+
 def vse(address):
     score = 0
     
@@ -24,14 +27,10 @@ def vse(address):
     bab_proxycontract_address = '0x2B09d47D550061f995A3b5C6F0Fd58005215D7c8'
     bab_contract = w3.eth.contract(address = w3.toChecksumAddress(bab_proxycontract_address) , abi = bab_abi)
     balance = bab_contract.functions.balanceOf(w3.toChecksumAddress(address)).call()
-    # return f'bab token balance - {balance}'
     if balance > 0:
         score+=10
         b = 0
         b +=10
-        
-        
-    
 
 
     try:
@@ -130,10 +129,7 @@ def vse(address):
         
     elif usdt_balance > 100:
         score+=1
-        
 
-    # return f'Your BNB Balance: {bnb_balance}\nYour BUSD balance: {busd_balance}\nYour USDC balance:{usdc_balance}\nYour USDT balance:{usdt_balance}'
-    
     time.sleep(5)
     address = address
     key = data["bsc"]['key']
@@ -164,6 +160,27 @@ def vse(address):
     elif venus_activity > 10:
         score+=1
         
-    # res = f'Your transactions with Pancake Swap:{pancake_swap_activity}\nYour transactions with Venus swap protocol:{venus_activity}'
-    return {"Overall": score}
-        
+    
+    if score > 10:
+        print('Score > 10 ==> Minting NFT...')
+        url = 'https://data-seed-prebsc-1-s3.binance.org:8545'
+        w3 = Web3(Web3.HTTPProvider(url))
+        private_key = private
+        account = w3.eth.account.privateKeyToAccount(private_key)
+        nft_contract = w3.eth.contract(address=Web3.toChecksumAddress(
+    '0x481AfC4Eb5ddf469479DE82f5455B1a2ac94a8E1'), abi=json.loads(open(abi_path).read()))
+        tx = nft_contract.functions.mint(Web3.toChecksumAddress(
+    address),1).buildTransaction({
+            'from': account.address,
+            'gasPrice': w3.eth.gas_price,
+            'gas': 300_000,
+            'nonce': w3.eth.get_transaction_count(account.address)
+        })
+        signed_tx = w3.eth.account.sign_transaction(
+            tx, private_key=private_key)
+        tx_hash = w3.eth.send_raw_transaction(signed_tx.rawTransaction)
+        print(f'Mint NFT - {tx_hash.hex()}')
+        print('----------------------------------------')
+        return tx_hash.hex()
+    else:
+        return "Cannot mint, because you have low activity"
